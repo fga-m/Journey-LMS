@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TrainingModule, Role, Department, Chapter, ContentType, Question, QuestionType } from '../types';
 
 interface ModuleManagerProps {
@@ -16,6 +16,11 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ modules, roles, departmen
   const [editingModule, setEditingModule] = useState<TrainingModule | null>(null);
   const [assignmentTab, setAssignmentTab] = useState<'DEPTS' | 'ROLES' | 'CHAPTERS'>('CHAPTERS');
   const [expandedChapterIdx, setExpandedChapterIdx] = useState<number | null>(null);
+  
+  // Filtering states
+  const [filterType, setFilterType] = useState<'ALL' | 'FOUNDATION' | 'DEPT' | 'ROLE'>('ALL');
+  const [filterValue, setFilterValue] = useState<string>('');
+
   const [formData, setFormData] = useState<Partial<TrainingModule>>({ 
     title: '', 
     description: '', 
@@ -25,6 +30,16 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ modules, roles, departmen
     durationMinutes: 30,
     isSequential: true
   });
+
+  const filteredModules = useMemo(() => {
+    return modules.filter(m => {
+      if (filterType === 'ALL') return true;
+      if (filterType === 'FOUNDATION') return m.isCompulsory;
+      if (filterType === 'DEPT') return m.targetDepartmentIds.includes(filterValue);
+      if (filterType === 'ROLE') return m.targetRoleIds.includes(filterValue);
+      return true;
+    });
+  }, [modules, filterType, filterValue]);
 
   const handleOpenCreate = () => {
     setEditingModule(null);
@@ -126,8 +141,84 @@ const ModuleManager: React.FC<ModuleManagerProps> = ({ modules, roles, departmen
         </button>
       </div>
 
+      {/* Filter Bar */}
+      <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-wrap items-center gap-4">
+        <div className="flex items-center space-x-2">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Library:</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => { setFilterType('ALL'); setFilterValue(''); }}
+            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterType === 'ALL' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+          >
+            All Modules
+          </button>
+          <button 
+            onClick={() => { setFilterType('FOUNDATION'); setFilterValue(''); }}
+            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterType === 'FOUNDATION' ? 'bg-red-500 text-white shadow-lg shadow-red-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+          >
+            Foundation Only
+          </button>
+          
+          <div className="flex items-center space-x-2">
+            <select 
+              value={filterType === 'DEPT' ? filterValue : ''}
+              onChange={(e) => { 
+                if (e.target.value === '') { setFilterType('ALL'); setFilterValue(''); }
+                else { setFilterType('DEPT'); setFilterValue(e.target.value); }
+              }}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none transition-all cursor-pointer ${filterType === 'DEPT' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              <option value="">By Department...</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            
+            <select 
+              value={filterType === 'ROLE' ? filterValue : ''}
+              onChange={(e) => { 
+                if (e.target.value === '') { setFilterType('ALL'); setFilterValue(''); }
+                else { setFilterType('ROLE'); setFilterValue(e.target.value); }
+              }}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none transition-all cursor-pointer ${filterType === 'ROLE' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+            >
+              <option value="">By Role...</option>
+              {roles.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {filterType !== 'ALL' && (
+          <button 
+            onClick={() => { setFilterType('ALL'); setFilterValue(''); }}
+            className="ml-auto text-[10px] font-black text-gray-300 uppercase tracking-widest hover:text-red-400 transition-colors"
+          >
+            Clear Filters ×
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between px-2">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+          Showing {filteredModules.length} {filterType !== 'ALL' ? 'Filtered' : 'Total'} Modules
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {modules.map(m => (
+        {filteredModules.length === 0 ? (
+          <div className="col-span-full py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <h4 className="text-xl font-bold text-gray-800">No modules found</h4>
+            <p className="text-sm text-gray-400 mt-1">Adjust your filters or create a new module to get started.</p>
+          </div>
+        ) : filteredModules.map(m => (
           <div key={m.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-4">
