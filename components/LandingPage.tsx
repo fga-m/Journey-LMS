@@ -21,7 +21,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
         </div>
         <div className="flex items-center space-x-8">
           <button onClick={onLogin} className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">Log In</button>
-          <button onClick={onGetStarted} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-100">Get Started</button>
         </div>
       </nav>
 
@@ -41,12 +40,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <button onClick={onGetStarted} className="w-full sm:w-auto px-10 py-5 bg-blue-600 text-white rounded-3xl text-lg font-black uppercase tracking-widest shadow-2xl shadow-blue-100 hover:bg-blue-700 hover:-translate-y-1 transition-all">
               Join the Journey
-            </button>
-            <button className="flex items-center space-x-3 group">
-              <div className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center group-hover:border-blue-600 transition-colors">
-                <svg className="w-4 h-4 text-slate-400 group-hover:text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              </div>
-              <span className="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">Watch Overview</span>
             </button>
           </div>
         </div>
