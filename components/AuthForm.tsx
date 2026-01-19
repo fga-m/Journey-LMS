@@ -12,11 +12,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -38,7 +40,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
           }
         });
         if (signUpError) throw signUpError;
-        alert('Registration successful! Please check your email for verification.');
+        setSuccess('Account created! Please check your email (and spam folder) for a confirmation link to activate your profile.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
@@ -67,6 +69,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
         {error && (
           <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-8 p-6 bg-green-50 border border-green-100 text-green-700 rounded-[2rem] text-sm font-medium leading-relaxed">
+            <div className="flex items-center space-x-3 mb-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span className="font-black uppercase tracking-widest text-[10px]">Success</span>
+            </div>
+            {success}
           </div>
         )}
 
@@ -126,7 +138,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
           <p className="text-sm text-slate-400 font-medium">
             {isLogin ? "Don't have an account yet?" : "Already have an account?"}
             <button 
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setSuccess(''); setError(''); }}
               className="ml-2 text-blue-600 font-bold hover:underline"
             >
               {isLogin ? 'Register Now' : 'Log In Here'}

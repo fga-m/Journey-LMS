@@ -9,6 +9,7 @@ export interface Profile {
   created_at: string;
   username?: string;
   phone?: string;
+  avatar_url?: string;
   role_ids?: string[];
   completed_chapter_ids?: string[];
 }
@@ -98,6 +99,7 @@ export interface Volunteer {
   fullName: string;
   email: string;
   phone: string;
+  avatarUrl?: string;
   roleIds: string[];
   completedChapterIds: string[];
   joinedAt: string;
