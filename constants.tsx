@@ -1,5 +1,5 @@
 
-import { TrainingModule, Volunteer, Journey, Department, Role } from './types';
+import { TrainingModule, Journey, Department, Role } from './types';
 
 export const INITIAL_DEPARTMENTS: Department[] = [
   { id: 'd1', name: 'Guest Services', coreModuleIds: ['m3'] },
@@ -71,9 +71,4 @@ export const INITIAL_MODULES: TrainingModule[] = [
 
 export const INITIAL_JOURNEYS: Journey[] = [
   { id: 'j1', roleId: 'r1', progressionModuleIds: ['m4'] }
-];
-
-export const INITIAL_VOLUNTEERS: Volunteer[] = [
-  { id: 'v1', username: 'jsmith', fullName: 'John Smith', email: 'john@example.com', phone: '555-0101', roleIds: ['r1'], completedChapterIds: ['c1-1'], joinedAt: '2023-01-15', isAdmin: true },
-  { id: 'v2', username: 'aleee', fullName: 'Alice Lee', email: 'alice@example.com', phone: '555-0102', roleIds: ['r4'], completedChapterIds: [], joinedAt: '2023-03-20', isAdmin: false }
 ];
