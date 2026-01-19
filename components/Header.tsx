@@ -7,9 +7,10 @@ interface HeaderProps {
   profile: Profile | null;
   onProfileUpdate: (updated: Profile) => void;
   onLogout: () => void;
+  onMenuToggle?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ profile, onProfileUpdate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ profile, onProfileUpdate, onLogout, onMenuToggle }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -25,21 +26,27 @@ const Header: React.FC<HeaderProps> = ({ profile, onProfileUpdate, onLogout }) =
   }, []);
 
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-xl font-black text-gray-900 tracking-tight">Journey Portal</h1>
+    <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-30">
+      <div className="flex items-center space-x-3 sm:space-x-4">
+        <button 
+          onClick={onMenuToggle}
+          className="p-2 -ml-2 hover:bg-gray-50 rounded-xl lg:hidden text-gray-500"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <h1 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">Journey Portal</h1>
       </div>
       
-      <div className="flex items-center space-x-6 relative" ref={menuRef}>
+      <div className="flex items-center space-x-4 sm:space-x-6 relative" ref={menuRef}>
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center space-x-3 pl-4 border-l border-gray-200 group focus:outline-none"
+          className="flex items-center space-x-2 sm:space-x-3 sm:pl-4 sm:border-l sm:border-gray-200 group focus:outline-none"
         >
           <div className="text-right hidden sm:block">
             <p className="text-sm font-black text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">{profile?.full_name}</p>
             <p className="text-[10px] text-blue-500 uppercase font-black tracking-widest">{profile?.role}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-white shadow-sm ring-1 ring-gray-100 flex items-center justify-center text-blue-600 font-black overflow-hidden hover:scale-105 transition-transform duration-200">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 border-2 border-white shadow-sm ring-1 ring-gray-100 flex items-center justify-center text-blue-600 font-black overflow-hidden hover:scale-105 transition-transform duration-200">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
             ) : (

@@ -9,9 +9,11 @@ interface SidebarProps {
   isImpersonating: boolean;
   onStopImpersonating: () => void;
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpersonating, onStopImpersonating, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpersonating, onStopImpersonating, onLogout, isOpen, onClose }) => {
   const menuItems: { id: View; label: string; icon: React.ReactNode; tooltip: string; adminOnly?: boolean }[] = [
     { 
         id: 'DASHBOARD', 
@@ -45,62 +47,70 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpe
   const filteredItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="w-64 bg-slate-900 h-full text-white flex flex-col transition-all duration-300 border-r border-slate-800">
-      <div className="p-8 flex flex-col items-center">
-        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
-          </svg>
+    <>
+      {/* Backdrop for mobile */}
+      <div 
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+      />
+      
+      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 h-full text-white flex flex-col transition-transform duration-300 border-r border-slate-800 z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="p-8 flex flex-col items-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
+            </svg>
+          </div>
+          <span className="text-xl font-bold tracking-tight">Journey LMS</span>
         </div>
-        <span className="text-xl font-bold tracking-tight">Journey LMS</span>
-      </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
-        {filteredItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setView(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-              currentView === item.id 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className={`${currentView === item.id ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
-              {item.icon}
-            </span>
-            <span className="font-medium text-sm">{item.label}</span>
-            <span className="absolute left-full ml-4 px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 border border-slate-700 shadow-2xl translate-x-[-10px] group-hover:translate-x-0">
-              {item.tooltip}
-            </span>
-          </button>
-        ))}
-      </nav>
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
+          {filteredItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id)}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                currentView === item.id 
+                  ? 'bg-blue-600 text-white shadow-md' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <span className={`${currentView === item.id ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
+                {item.icon}
+              </span>
+              <span className="font-medium text-sm">{item.label}</span>
+              <span className="absolute left-full ml-4 px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 border border-slate-700 shadow-2xl translate-x-[-10px] group-hover:translate-x-0 hidden lg:block">
+                {item.tooltip}
+              </span>
+            </button>
+          ))}
+        </nav>
 
-      <div className="p-4 space-y-4">
-        {isImpersonating && (
+        <div className="p-4 space-y-4">
+          {isImpersonating && (
+            <button 
+              onClick={onStopImpersonating}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all font-bold text-[10px] uppercase tracking-widest"
+            >
+              Stop Impersonation
+            </button>
+          )}
+
           <button 
-            onClick={onStopImpersonating}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all font-bold text-[10px] uppercase tracking-widest"
+            onClick={onLogout}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all group"
           >
-            Stop Impersonation
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            <span className="font-medium text-sm">Logout</span>
           </button>
-        )}
 
-        <button 
-          onClick={onLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-all group"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          <span className="font-medium text-sm">Logout</span>
-        </button>
-
-        <div className="bg-slate-800/50 rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Status</p>
-          <p className="text-xs font-bold text-blue-400">{isAdmin ? 'Administrator' : 'Volunteer'}</p>
+          <div className="bg-slate-800/50 rounded-2xl p-4 text-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Status</p>
+            <p className="text-xs font-bold text-blue-400">{isAdmin ? 'Administrator' : 'Volunteer'}</p>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 
