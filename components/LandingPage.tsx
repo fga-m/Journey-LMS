@@ -30,10 +30,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
         <div className="space-y-10 animate-slideUp">
           <div className="inline-flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
             <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Now powering 50+ ministries</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Empowering FGAM's Volunteers</span>
           </div>
           <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-none text-slate-900">
-            Guided Growth for <span className="text-blue-600">Ministry Excellence.</span>
+            FGA Melbourne's <span className="text-blue-600">Volunteer Journey.</span>
           </h1>
           <p className="text-xl text-slate-500 leading-relaxed max-w-xl">
             A comprehensive training platform designed to equip church volunteers with the knowledge and heart to serve their community with excellence.
