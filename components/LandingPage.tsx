@@ -32,7 +32,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin }) => {
             <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Empowering FGAM's Volunteers</span>
           </div>
-          <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-none text-slate-900">
+          <h1 className="text-6xl lg:text-8xl font-black tracking-tight leading-none text-slate-900">
             FGA Melbourne's <span className="text-blue-600">Volunteer Journey.</span>
           </h1>
           <p className="text-xl text-slate-500 leading-relaxed max-w-xl">

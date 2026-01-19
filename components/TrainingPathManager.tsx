@@ -10,16 +10,21 @@ interface TrainingPathManagerProps {
   pathways: Journey[];
   // Added roles prop to fix 'Role' type being used as a value
   roles: Role[];
-  onUpdatePathway: (role: Role, moduleIds: string[]) => void;
+  onUpdatePathway: (roleId: string, moduleIds: string[]) => void;
 }
 
 const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volunteers, pathways, roles, onUpdatePathway }) => {
-  // Use roles[0] instead of Role.USHER which doesn't exist on the Role type (it's a string alias)
-  const [selectedRole, setSelectedRole] = useState<Role>(roles[0] || '');
+  // Use roles[0] as initial state. Using a string fallback here is tricky if Role is an object.
+  // We'll assume roles is never empty for this component's mount.
+  const [selectedRole, setSelectedRole] = useState<Role | null>(roles[0] || null);
 
-  const roleModules = modules.filter(m => m.targetRoles.includes(selectedRole) && !m.isCompulsory);
-  const currentPathway = pathways.find(p => p.role === selectedRole);
-  const orderedModuleIds = currentPathway?.moduleIds || [];
+  if (!selectedRole) return <div className="p-10 text-center text-gray-400 font-bold">No roles available.</div>;
+
+  // Fix: use targetRoleIds and filter by selectedRole.id
+  const roleModules = modules.filter(m => m.targetRoleIds.includes(selectedRole.id) && !m.isCompulsory);
+  // Fix: use roleId and progressionModuleIds from Journey type
+  const currentPathway = pathways.find(p => p.roleId === selectedRole.id);
+  const orderedModuleIds = currentPathway?.progressionModuleIds || [];
 
   // Modules that ARE in the current role's pathway (in order)
   const pathwayModules = orderedModuleIds
@@ -33,22 +38,22 @@ const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volu
     if (idx === 0) return;
     const newOrder = [...orderedModuleIds];
     [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
-    onUpdatePathway(selectedRole, newOrder);
+    onUpdatePathway(selectedRole.id, newOrder);
   };
 
   const moveDown = (idx: number) => {
     if (idx === orderedModuleIds.length - 1) return;
     const newOrder = [...orderedModuleIds];
     [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
-    onUpdatePathway(selectedRole, newOrder);
+    onUpdatePathway(selectedRole.id, newOrder);
   };
 
   const addToPathway = (id: string) => {
-    onUpdatePathway(selectedRole, [...orderedModuleIds, id]);
+    onUpdatePathway(selectedRole.id, [...orderedModuleIds, id]);
   };
 
   const removeFromPathway = (id: string) => {
-    onUpdatePathway(selectedRole, orderedModuleIds.filter(mid => mid !== id));
+    onUpdatePathway(selectedRole.id, orderedModuleIds.filter(mid => mid !== id));
   };
 
   const compulsoryModules = modules.filter(m => m.isCompulsory);
@@ -64,11 +69,11 @@ const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volu
                 {/* Use the roles prop instead of Object.values(Role) since Role is a type */}
                 {roles.map(role => (
                     <button
-                        key={role}
+                        key={role.id}
                         onClick={() => setSelectedRole(role)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${selectedRole === role ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-50'}`}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${selectedRole.id === role.id ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-50'}`}
                     >
-                        {role}
+                        {role.name}
                     </button>
                 ))}
             </div>
@@ -103,7 +108,7 @@ const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volu
             <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-800">The {selectedRole} Journey</h3>
+                        <h3 className="text-xl font-bold text-gray-800">The {selectedRole.name} Journey</h3>
                         <p className="text-xs text-gray-400 mt-1">Modules will appear on the user dashboard in this order.</p>
                     </div>
                     <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{pathwayModules.length} Modules</span>
@@ -155,7 +160,7 @@ const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volu
             <div className="space-y-6 flex flex-col h-full">
                 <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white flex-1 overflow-y-auto">
                     <h3 className="text-xl font-bold mb-2">Module Inventory</h3>
-                    <p className="text-xs text-slate-400 mb-8">Unassigned modules specifically tagged for the {selectedRole} role.</p>
+                    <p className="text-xs text-slate-400 mb-8">Unassigned modules specifically tagged for the {selectedRole.name} role.</p>
                     
                     <div className="space-y-4">
                         {unassignedModules.length === 0 ? (
@@ -188,13 +193,13 @@ const TrainingPathManager: React.FC<TrainingPathManagerProps> = ({ modules, volu
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-gray-800">{volunteers.filter(v => v.roles.includes(selectedRole)).length} Impacted Users</p>
-                            <p className="text-[10px] text-gray-400">Volunteers in the {selectedRole} department</p>
+                            <p className="text-xs font-bold text-gray-800">{volunteers.filter(v => v.roleIds.includes(selectedRole.id)).length} Impacted Users</p>
+                            <p className="text-[10px] text-gray-400">Volunteers in the {selectedRole.name} department</p>
                         </div>
                     </div>
                     <div className="h-8 w-px bg-gray-100"></div>
                     <div className="flex -space-x-2">
-                        {volunteers.filter(v => v.roles.includes(selectedRole)).slice(0, 3).map(v => (
+                        {volunteers.filter(v => v.roleIds.includes(selectedRole.id)).slice(0, 3).map(v => (
                             <img key={v.id} className="w-8 h-8 rounded-full border-2 border-white" src={`https://picsum.photos/seed/${v.id}/32/32`} alt="" />
                         ))}
                     </div>
