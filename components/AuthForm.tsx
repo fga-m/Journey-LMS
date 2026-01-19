@@ -4,10 +4,11 @@ import { supabase } from '../supabase.ts';
 
 interface AuthFormProps {
   onBack: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onBack }) => {
-  const [isLogin, setIsLogin] = useState(true);
+const AuthForm: React.FC<AuthFormProps> = ({ onBack, initialMode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');

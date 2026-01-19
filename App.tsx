@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [view, setView] = useState<View>('DASHBOARD');
   const [dbStatus, setDbStatus] = useState<'OK' | 'MISSING_TABLES' | 'ERROR'>('OK');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -239,16 +240,17 @@ CREATE POLICY "AdminAll" ON public.profiles FOR ALL USING (true);`;
     </div>
   );
 
-  if (!session) return showAuth ? <AuthForm onBack={() => setShowAuth(false)} /> : <LandingPage onGetStarted={() => setShowAuth(true)} onLogin={() => setShowAuth(true)} />;
-
-  if (dbStatus === 'MISSING_TABLES') {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="max-w-lg w-full bg-white rounded-[3rem] shadow-2xl p-12 text-center border border-gray-100">
-          <h2 className="text-3xl font-black text-gray-900 mb-4">Database Not Configured</h2>
-          <button onClick={() => { navigator.clipboard.writeText(getSqlScript()); alert('SQL Script Copied!'); }} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">Copy Migration SQL</button>
-        </div>
-      </div>
+  if (!session) {
+    return showAuth ? (
+      <AuthForm 
+        initialMode={authMode} 
+        onBack={() => setShowAuth(false)} 
+      />
+    ) : (
+      <LandingPage 
+        onGetStarted={() => { setAuthMode('register'); setShowAuth(true); }} 
+        onLogin={() => { setAuthMode('login'); setShowAuth(true); }} 
+      />
     );
   }
 
