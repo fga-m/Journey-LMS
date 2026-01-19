@@ -7,6 +7,10 @@ export interface Profile {
   email: string;
   role: UserRole;
   created_at: string;
+  username?: string;
+  phone?: string;
+  role_ids?: string[];
+  completed_chapter_ids?: string[];
 }
 
 export interface Course {

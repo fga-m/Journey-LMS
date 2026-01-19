@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase.ts';
-import { Profile, View, Course, Enrollment, Volunteer, TrainingModule, Role, Department, Journey } from './types.ts';
-import { INITIAL_VOLUNTEERS, INITIAL_MODULES, INITIAL_ROLES, INITIAL_DEPARTMENTS, INITIAL_JOURNEYS } from './constants.tsx';
+import { Profile, View, Volunteer, TrainingModule, Role, Department, Journey } from './types.ts';
+import { INITIAL_MODULES, INITIAL_ROLES, INITIAL_DEPARTMENTS, INITIAL_JOURNEYS, INITIAL_VOLUNTEERS } from './constants.tsx';
 import LandingPage from './components/LandingPage.tsx';
 import AuthForm from './components/AuthForm.tsx';
 import Sidebar from './components/Sidebar.tsx';
@@ -18,9 +18,10 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [view, setView] = useState<View>('DASHBOARD');
+  const [dbStatus, setDbStatus] = useState<'OK' | 'MISSING_TABLE' | 'ERROR'>('OK');
 
-  // Admin Data State (Fallback to constants for demo/initial setup)
-  const [volunteers, setVolunteers] = useState<Volunteer[]>(INITIAL_VOLUNTEERS);
+  // Directory and Training State
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [modules, setModules] = useState<TrainingModule[]>(INITIAL_MODULES);
   const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
   const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
@@ -30,18 +31,30 @@ const App: React.FC = () => {
   const [impersonatedUser, setImpersonatedUser] = useState<Volunteer | null>(null);
 
   useEffect(() => {
+    // Initial load from Local Storage (Fallback)
+    const storedVolunteers = localStorage.getItem('journey_volunteers');
+    if (storedVolunteers) {
+      setVolunteers(JSON.parse(storedVolunteers));
+    } else {
+      setVolunteers(INITIAL_VOLUNTEERS);
+    }
+
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
+      if (session) {
+        fetchProfile(session.user.id, session);
+      } else {
+        setLoading(false);
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else {
+      if (session) {
+        fetchProfile(session.user.id, session);
+      } else {
         setProfile(null);
         setLoading(false);
       }
@@ -50,7 +63,14 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  // Save to local storage whenever volunteers change (for resilience)
+  useEffect(() => {
+    if (volunteers.length > 0) {
+      localStorage.setItem('journey_volunteers', JSON.stringify(volunteers));
+    }
+  }, [volunteers]);
+
+  const fetchProfile = async (userId: string, currentSession: any) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -59,23 +79,92 @@ const App: React.FC = () => {
         .single();
       
       if (error) {
-        // Fallback for demo if profiles table not yet populated via trigger
-        setProfile({
-          id: userId,
-          full_name: session?.user?.email?.split('@')[0] || 'User',
-          email: session?.user?.email || '',
-          role: 'admin', // Default to admin for first user/setup convenience
-          created_at: new Date().toISOString()
-        });
+        if (error.message.includes('profiles') && error.message.includes('not find')) {
+          setDbStatus('MISSING_TABLE');
+          handleFallbackProfile(userId, currentSession);
+        } else if (error.code === 'PGRST116') {
+          // Profile row missing - try to create it
+          await createProfile(userId, currentSession);
+        } else {
+          console.error('Profile fetch error:', error.message);
+          handleFallbackProfile(userId, currentSession);
+        }
       } else {
+        setDbStatus('OK');
         setProfile(data);
+        if (data.role === 'admin') fetchVolunteers();
+        else setVolunteers([mapProfileToVolunteer(data)]);
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    } catch (err: any) {
+      console.error('Exception fetching profile details:', err.message || err);
+      handleFallbackProfile(userId, currentSession);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleFallbackProfile = (userId: string, currentSession: any) => {
+    const fallback: Profile = {
+      id: userId,
+      full_name: currentSession?.user?.user_metadata?.full_name || currentSession?.user?.email?.split('@')[0] || 'User',
+      email: currentSession?.user?.email || '',
+      role: 'admin',
+      created_at: new Date().toISOString(),
+      role_ids: [],
+      completed_chapter_ids: []
+    };
+    setProfile(fallback);
+  };
+
+  const createProfile = async (userId: string, currentSession: any) => {
+    const newProfile: Partial<Profile> = {
+      id: userId,
+      full_name: currentSession?.user?.user_metadata?.full_name || currentSession?.user?.email?.split('@')[0] || 'User',
+      email: currentSession?.user?.email || '',
+      role: 'admin',
+      role_ids: [],
+      completed_chapter_ids: [],
+      created_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase.from('profiles').upsert(newProfile).select().single();
+    if (!error) {
+      setProfile(data);
+      if (data.role === 'admin') fetchVolunteers();
+    } else {
+      setProfile(newProfile as Profile);
+    }
+  };
+
+  const fetchVolunteers = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name', { ascending: true });
+
+    if (error) {
+      if (error.message.includes('profiles') && error.message.includes('not find')) {
+        setDbStatus('MISSING_TABLE');
+      } else {
+        console.error('Error fetching volunteers:', error.message);
+      }
+    } else if (data) {
+      setDbStatus('OK');
+      setVolunteers(data.map(mapProfileToVolunteer));
+    }
+  };
+
+  const mapProfileToVolunteer = (p: any): Volunteer => ({
+    id: p.id,
+    fullName: p.full_name || 'Unnamed',
+    username: p.username || p.email?.split('@')[0] || 'user',
+    email: p.email,
+    phone: p.phone || '',
+    roleIds: p.role_ids || [],
+    completedChapterIds: p.completed_chapter_ids || [],
+    joinedAt: p.created_at || new Date().toISOString(),
+    isAdmin: p.role === 'admin'
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -83,19 +172,49 @@ const App: React.FC = () => {
     setImpersonatedUser(null);
   };
 
-  const handleUpdateVolunteer = (updated: Volunteer) => {
+  const handleUpdateVolunteer = async (updated: Volunteer) => {
     setVolunteers(prev => prev.map(v => v.id === updated.id ? updated : v));
+
+    if (dbStatus === 'OK') {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updated.fullName,
+          username: updated.username,
+          phone: updated.phone,
+          role_ids: updated.roleIds,
+          role: updated.isAdmin ? 'admin' : 'volunteer'
+        })
+        .eq('id', updated.id);
+
+      if (error) console.error('Error updating volunteer in DB:', error.message);
+    }
   };
 
-  const handleResetProgress = (volunteerId: string, moduleId?: string) => {
+  const handleResetProgress = async (volunteerId: string, moduleId?: string) => {
+    let newCompletedIds: string[] = [];
+    
     setVolunteers(prev => prev.map(v => {
       if (v.id !== volunteerId) return v;
-      if (!moduleId) return { ...v, completedChapterIds: [] };
-      const module = modules.find(m => m.id === moduleId);
-      if (!module) return v;
-      const chapterIds = module.chapters.map(c => c.id);
-      return { ...v, completedChapterIds: v.completedChapterIds.filter(id => !chapterIds.includes(id)) };
+      if (!moduleId) {
+        newCompletedIds = [];
+      } else {
+        const module = modules.find(m => m.id === moduleId);
+        if (!module) return v;
+        const chapterIds = module.chapters.map(c => c.id);
+        newCompletedIds = v.completedChapterIds.filter(id => !chapterIds.includes(id));
+      }
+      return { ...v, completedChapterIds: newCompletedIds };
     }));
+
+    if (dbStatus === 'OK') {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ completed_chapter_ids: newCompletedIds })
+        .eq('id', volunteerId);
+
+      if (error) console.error('Error resetting progress in DB:', error.message);
+    }
   };
 
   const handleUpdateJourney = (roleId: string, progressionIds: string[]) => {
@@ -118,16 +237,21 @@ const App: React.FC = () => {
 
   if (!session) {
     return showAuth ? (
-      <AuthForm 
-        onBack={() => setShowAuth(false)} 
-      />
+      <AuthForm onBack={() => setShowAuth(false)} />
     ) : (
-      <LandingPage 
-        onGetStarted={() => setShowAuth(true)} 
-        onLogin={() => setShowAuth(true)} 
-      />
+      <LandingPage onGetStarted={() => setShowAuth(true)} onLogin={() => setShowAuth(true)} />
     );
   }
+
+  const activeProfile = impersonatedUser ? {
+    id: impersonatedUser.id,
+    full_name: impersonatedUser.fullName + (impersonatedUser.id === profile?.id ? "" : " (Previewing)"),
+    email: impersonatedUser.email,
+    role: 'volunteer' as const,
+    created_at: impersonatedUser.joinedAt,
+    completed_chapter_ids: impersonatedUser.completedChapterIds,
+    role_ids: impersonatedUser.roleIds
+  } : profile;
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -140,23 +264,57 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden text-gray-900">
-        <Header profile={impersonatedUser ? {
-          id: impersonatedUser.id,
-          full_name: impersonatedUser.fullName + " (Previewing)",
-          email: impersonatedUser.email,
-          role: 'volunteer',
-          created_at: impersonatedUser.joinedAt
-        } : profile} />
+        <Header profile={activeProfile} />
+        
+        {dbStatus === 'MISSING_TABLE' && profile?.role === 'admin' && (
+          <div className="bg-amber-50 border-b border-amber-100 p-4 animate-fadeIn">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-amber-900">Database Setup Required</p>
+                  <p className="text-xs text-amber-700">The 'profiles' table is missing. Run the SQL script in your Supabase dashboard to enable live sync.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  const sql = `CREATE TABLE profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE,
+  full_name TEXT,
+  username TEXT,
+  phone TEXT,
+  role TEXT DEFAULT 'volunteer',
+  role_ids TEXT[] DEFAULT '{}',
+  completed_chapter_ids TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public profiles are viewable by everyone." ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile." ON profiles FOR UPDATE USING (auth.uid() = id);`;
+                  navigator.clipboard.writeText(sql);
+                  alert('SQL Copied to clipboard! Paste it into your Supabase SQL Editor.');
+                }}
+                className="px-4 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all shadow-sm"
+              >
+                Copy SQL Setup
+              </button>
+            </div>
+          </div>
+        )}
+
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {view === 'DASHBOARD' && (
             <Dashboard 
-              profile={impersonatedUser ? {
-                id: impersonatedUser.id,
-                full_name: impersonatedUser.fullName,
-                email: impersonatedUser.email,
-                role: 'volunteer',
-                created_at: impersonatedUser.joinedAt
-              } : profile} 
+              profile={activeProfile}
+              volunteers={volunteers}
+              modules={modules}
+              roles={roles}
+              departments={departments}
+              journeys={journeys}
             />
           )}
           
