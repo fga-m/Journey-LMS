@@ -14,47 +14,23 @@ export interface Profile {
   completed_chapter_ids?: string[];
 }
 
-export interface Course {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  is_published: boolean;
-  duration_minutes: number;
-  created_at: string;
-}
+export type View = 'DASHBOARD' | 'VOLUNTEERS' | 'MODULES' | 'JOURNEY_BUILDER' | 'SETTINGS';
 
-export interface Enrollment {
-  id: string;
-  profile_id: string;
-  course_id: string;
-  progress_percent: number;
-  enrolled_at: string;
-  course?: Course; // Joined data
-}
-
-// Updated View type to include all views used in Sidebar and App components
-export type View = 'DASHBOARD' | 'DIRECTORY' | 'LIBRARY' | 'SETTINGS' | 'VOLUNTEERS' | 'MODULES' | 'JOURNEY_BUILDER';
-
-// Added Department type
 export interface Department {
   id: string;
   name: string;
   coreModuleIds: string[];
 }
 
-// Added Role type
 export interface Role {
   id: string;
   name: string;
   departmentId: string;
 }
 
-// Added ContentType and QuestionType
 export type ContentType = 'VIDEO' | 'PDF' | 'LINK';
 export type QuestionType = 'TEXT' | 'MULTIPLE_CHOICE';
 
-// Added Question type
 export interface Question {
   id: string;
   text: string;
@@ -63,7 +39,6 @@ export interface Question {
   correctAnswer: string;
 }
 
-// Added Chapter type
 export interface Chapter {
   id: string;
   title: string;
@@ -72,7 +47,6 @@ export interface Chapter {
   questions: Question[];
 }
 
-// Added TrainingModule type
 export interface TrainingModule {
   id: string;
   title: string;
@@ -85,14 +59,12 @@ export interface TrainingModule {
   chapters: Chapter[];
 }
 
-// Added Journey type
 export interface Journey {
   id: string;
   roleId: string;
   progressionModuleIds: string[];
 }
 
-// Added Volunteer type
 export interface Volunteer {
   id: string;
   username: string;

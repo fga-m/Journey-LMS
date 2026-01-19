@@ -48,7 +48,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpe
 
   return (
     <>
-      {/* Backdrop for mobile */}
       <div 
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
@@ -62,6 +61,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpe
             </svg>
           </div>
           <span className="text-xl font-bold tracking-tight">Journey LMS</span>
+          <div className="mt-2 flex items-center space-x-2 bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Database Live</span>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
@@ -79,9 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, isAdmin, isImpe
                 {item.icon}
               </span>
               <span className="font-medium text-sm">{item.label}</span>
-              <span className="absolute left-full ml-4 px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 border border-slate-700 shadow-2xl translate-x-[-10px] group-hover:translate-x-0 hidden lg:block">
-                {item.tooltip}
-              </span>
             </button>
           ))}
         </nav>
